@@ -52,3 +52,21 @@ build/
 *.dll
 *.pdb
 *.exe" > .gitignore
+# Dependencies 
+/angular-admin/node_modules/ 
+/react-client/node_modules/ 
+/server.net/bin/ 
+/server.net/obj/ 
+/server.net/.vs/ 
+# Build 
+/angular-admin/dist/ 
+/react-client/build/ 
+/react-client/dist/ 
+# IDE 
+.vs/ 
+.vscode/ 
+*.suo 
+*.user 
+# Misc 
+.DS_Store 
+*.log 
