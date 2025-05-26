@@ -6,18 +6,6 @@ import { useNavigate } from 'react-router-dom';
 import { register } from '../../services/authService';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 
-const validationSchema = Yup.object({
-  email: Yup.string()
-    .email('Invalid email address')
-    .required('Email is required'),
-  password: Yup.string()
-    .min(6, 'Password must be at least 6 characters')
-    .required('Password is required'),
-  confirmPassword: Yup.string()
-    .oneOf([Yup.ref('password'), undefined], 'Passwords must match')
-    .required('Confirm Password is required'),
-});
-
 const RegisterForm: React.FC = () => {
   const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState<string>('');
