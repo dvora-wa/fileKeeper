@@ -1,5 +1,5 @@
 import api from '../api/axios';
-import type { LoginCredentials, RegisterCredentials, User } from '../types/auth.types';
+import type { LoginCredentials, RegisterCredentials, User } from '../types/index.types';
 
 export const login = async (credentials: LoginCredentials) => {
   try {

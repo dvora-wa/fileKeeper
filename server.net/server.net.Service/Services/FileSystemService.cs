@@ -1,6 +1,5 @@
 using Amazon.S3;
 using Amazon.S3.Model;
-using FileKeeper_server_.net.Core.Models;
 using FileKeeper_server_.net.Core.Entities;
 using FileKeeper_server_.net.Core.Interfaces.Services;
 using FileKeeper_server_.net.Data;
@@ -8,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Amazon.Runtime;
 using Amazon;
+using server.net.Core.DTOs;
 
 namespace FileKeeper_server_.net.Service.Services
 {
@@ -91,8 +91,6 @@ namespace FileKeeper_server_.net.Service.Services
                 Name = dto.Name,
                 ParentFolderId = dto.ParentFolderId,
                 UserId = userId,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
             };
 
             _context.Folders.Add(folder);

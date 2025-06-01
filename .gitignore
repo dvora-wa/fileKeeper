@@ -70,3 +70,4 @@ build/
 # Misc 
 .DS_Store 
 *.log 
+server.net/server.net.API/appsettings.Development.json 

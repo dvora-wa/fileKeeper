@@ -5,7 +5,7 @@ namespace FileKeeper_server_.net.Core.Entities
 {
     public class Folder : BaseEntity
     {
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public Guid Id { get; set; }
         public required string Name { get; set; }
         public Guid? ParentFolderId { get; set; }
         public required int UserId { get; set; }

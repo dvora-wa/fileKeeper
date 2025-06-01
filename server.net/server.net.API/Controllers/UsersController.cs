@@ -1,12 +1,13 @@
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
+﻿using FileKeeper_server_.net.Core.Interfaces.Services;
 using System.Security.Claims;
-using FileKeeper_server_.net.Core.Interfaces.Services;
-using FileKeeper_server_.net.Core.Models;
-using FileKeeper_server_.net.Core.Entities;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using server.net.Core.Models;
+using Microsoft.AspNetCore.Authorization;
 
-namespace FileKeeper_server_.net.API.Controllers
+namespace server.net.API.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class UsersController : ControllerBase
@@ -18,71 +19,76 @@ namespace FileKeeper_server_.net.API.Controllers
             _userService = userService;
         }
 
-        [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterUserModel model)
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetUser(int id)
         {
-            try
-            {
-                var (user, token) = await _userService.Register(model);
-                return Ok(new { user, token });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginUserModel model)
-        {
-            try
-            {
-                var (user, token) = await _userService.Login(model);
-                return Ok(new { user, token });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
-        [Authorize]
-        [HttpGet]
-        public async Task<IActionResult> GetCurrentUser()
-        {
-            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
-            var user = await _userService.GetUserById(userId);
+            var user = await _userService.GetUserByIdAsync(id);
             return Ok(user);
         }
 
-        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserModel model)
         {
-            try
+            // בדיקה שהמשתמש יכול לעדכן רק את עצמו (אלא אם כן הוא Admin)
+            var currentUserId = GetCurrentUserId();
+            var currentUserRole = GetCurrentUserRole();
+
+            if (currentUserId != id && currentUserRole != "Admin")
             {
-                await _userService.UpdateUser(id, model);
-                return NoContent();
+                throw new UnauthorizedAccessException("You can only update your own profile");
             }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+
+            await _userService.UpdateUserAsync(id, model);
+            return NoContent();
         }
 
-        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(int id)
         {
-            try
+            // בדיקה שהמשתמש יכול למחוק רק את עצמו (אלא אם כן הוא Admin)
+            var currentUserId = GetCurrentUserId();
+            var currentUserRole = GetCurrentUserRole();
+
+            if (currentUserId != id && currentUserRole != "Admin")
             {
-                await _userService.DeleteUser(id);
-                return NoContent();
+                throw new UnauthorizedAccessException("You can only delete your own profile");
             }
-            catch (Exception ex)
+
+            await _userService.DeleteUserAsync(id);
+            return NoContent();
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet]
+        public async Task<IActionResult> GetAllUsers()
+        {
+            var users = await _userService.GetAllUsersAsync();
+            return Ok(users);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("admin/{id}")]
+        public async Task<IActionResult> AdminDeleteUser(int id)
+        {
+            // Admin יכול למחוק כל משתמש
+            await _userService.DeleteUserAsync(id);
+            return NoContent();
+        }
+
+        // מתודות עזר
+        private int GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst("userId")?.Value;
+            if (int.TryParse(userIdClaim, out int userId))
             {
-                return BadRequest(ex.Message);
+                return userId;
             }
+            return 0;
+        }
+
+        private string GetCurrentUserRole()
+        {
+            return User.FindFirst(ClaimTypes.Role)?.Value ?? "";
         }
     }
 }

@@ -6,10 +6,12 @@ namespace FileKeeper_server_.net.API.Middleware
     public class ErrorHandlingMiddleware
     {
         private readonly RequestDelegate _next;
+        private readonly ILogger<ErrorHandlingMiddleware> _logger;
 
-        public ErrorHandlingMiddleware(RequestDelegate next)
+        public ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger)
         {
             _next = next;
+            _logger = logger;
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -24,15 +26,28 @@ namespace FileKeeper_server_.net.API.Middleware
             }
         }
 
-        private static async Task HandleExceptionAsync(HttpContext context, Exception ex)
+        private async Task HandleExceptionAsync(HttpContext context, Exception ex)
         {
+            _logger.LogError(ex, "An unhandled exception occurred");
+
             context.Response.ContentType = "application/json";
-            context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+
+            var (statusCode, message) = ex switch
+            {
+                UnauthorizedAccessException => (HttpStatusCode.Unauthorized, "Unauthorized access"),
+                InvalidOperationException => (HttpStatusCode.BadRequest, ex.Message),
+                ArgumentException => (HttpStatusCode.BadRequest, ex.Message),
+                _ => (HttpStatusCode.InternalServerError, "An internal server error occurred")
+            };
+
+            context.Response.StatusCode = (int)statusCode;
 
             var response = new
             {
-                error = "שגיאה פנימית בשרת",
-                details = ex.Message
+                error = message,
+                details = context.RequestServices.GetService<IWebHostEnvironment>()?.IsDevelopment() == true
+                    ? ex.ToString()
+                    : null
             };
 
             await context.Response.WriteAsync(JsonSerializer.Serialize(response));

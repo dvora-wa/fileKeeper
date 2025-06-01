@@ -18,13 +18,13 @@ namespace FileKeeper_server_.net.Data
 
         public override int SaveChanges()
         {
-            AddTimestamps();
+            //AddTimestamps();
             return base.SaveChanges();
         }
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
-            AddTimestamps();
+            //AddTimestamps();
             return base.SaveChangesAsync(cancellationToken);
         }
 
@@ -58,8 +58,7 @@ namespace FileKeeper_server_.net.Data
                 entity.Property(e => e.Email)
                     .IsRequired()
                     .HasMaxLength(255);
-                //entity.HasIndex(e => e.Email)
-                //    .IsUnique();
+                entity.HasIndex(e => e.Email).IsUnique();
 
                 entity.Property(e => e.FirstName)
                     .IsRequired()

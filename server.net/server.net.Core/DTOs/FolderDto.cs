@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace FileKeeper_server_.net.Core.Models
+namespace server.net.Core.DTOs
 {
     public class FolderDto
     {
         public Guid Id { get; set; }
-        public required string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
         public Guid? ParentFolderId { get; set; }
         public int UserId { get; set; }
         public DateTime CreatedAt { get; set; }

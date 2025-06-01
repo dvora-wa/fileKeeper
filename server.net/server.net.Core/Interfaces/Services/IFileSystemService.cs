@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using FileKeeper_server_.net.Core.Models;
 using FileKeeper_server_.net.Core.Entities;
+using server.net.Core.DTOs;
 
 namespace FileKeeper_server_.net.Core.Interfaces.Services
 {
