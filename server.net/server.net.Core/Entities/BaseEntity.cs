@@ -1,14 +1,22 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.ComponentModel.DataAnnotations;
 
-namespace FileKeeper_server_.net.Core.Entities
+namespace server.net.Core.Entities
 {
-    public class BaseEntity
+    public abstract class BaseEntity
     {
+        [Required]
         public DateTime CreatedAt { get; set; } 
+
+        [Required]
         public DateTime UpdatedAt { get; set; } 
+
+        // ✅ הוסף שדות מועילים
+        public string? CreatedBy { get; set; } // מי יצר
+        public string? UpdatedBy { get; set; } // מי עדכן
+
+        // ✅ Version control לOptimistic Concurrency
+        [Timestamp]
+        public byte[]? RowVersion { get; set; }
     }
 }

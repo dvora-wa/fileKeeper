@@ -11,5 +11,8 @@ namespace server.net.Core.DTOs
     {
         public string DownloadUrl { get; set; } = string.Empty;
         public string FileName { get; set; } = string.Empty;
+        public DateTime ExpiresAt { get; set; }
+        public long FileSize { get; set; }
+        public string ContentType { get; set; } = string.Empty;
     }
 }

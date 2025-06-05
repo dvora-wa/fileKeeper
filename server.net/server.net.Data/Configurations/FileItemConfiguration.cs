@@ -1,8 +1,8 @@
-using FileKeeper_server_.net.Core.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using server.net.Core.Entities;
 
-namespace FileKeeper_server_.net.Data.Configurations
+namespace server.net.Data.Configurations
 {
     public class FileItemConfiguration : IEntityTypeConfiguration<FileItem>
     {

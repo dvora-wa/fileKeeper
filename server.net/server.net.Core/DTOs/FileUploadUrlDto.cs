@@ -10,5 +10,7 @@ namespace server.net.Core.DTOs
     {
         public string UploadUrl { get; set; } = string.Empty;
         public string FileId { get; set; } = string.Empty;
+        public DateTime ExpiresAt { get; set; }
+        public string S3Key { get; set; } = string.Empty;
     }
 }

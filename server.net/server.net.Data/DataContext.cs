@@ -1,50 +1,156 @@
 using Microsoft.EntityFrameworkCore;
-using FileKeeper_server_.net.Core.Entities;
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
+using server.net.Core.Entities;
 
-namespace FileKeeper_server_.net.Data
+namespace server.net.Data
 {
+    //public class DataContext : DbContext
+    //{
+    //    private readonly IHttpContextAccessor? _httpContextAccessor;
+
+    //    public DataContext(DbContextOptions<DataContext> options, IHttpContextAccessor? httpContextAccessor = null)
+    //        : base(options)
+    //    {
+    //        _httpContextAccessor = httpContextAccessor;
+    //    }
+
+    //    public DbSet<User> Users { get; set; } = null!;
+    //    public DbSet<Folder> Folders { get; set; } = null!;
+    //    public DbSet<FileItem> Files { get; set; } = null!;
+
+    //    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    //    {
+    //        base.OnModelCreating(modelBuilder);
+
+    //        // ? User Configuration
+    //        modelBuilder.Entity<User>(entity =>
+    //        {
+    //            entity.HasKey(e => e.Id);
+    //            entity.HasIndex(e => e.Email).IsUnique();
+    //            entity.HasIndex(e => e.IsDeleted);
+
+    //            // Soft delete filter
+    //            entity.HasQueryFilter(e => !e.IsDeleted);
+
+    //            // One-to-many relationships
+    //            entity.HasMany(e => e.Folders)
+    //                  .WithOne(e => e.User)
+    //                  .HasForeignKey(e => e.UserId)
+    //                  .OnDelete(DeleteBehavior.Cascade);
+
+    //            entity.HasMany(e => e.Files)
+    //                  .WithOne(e => e.User)
+    //                  .HasForeignKey(e => e.UserId)
+    //                  .OnDelete(DeleteBehavior.Cascade);
+    //        });
+
+    //        // ? Folder Configuration
+    //        modelBuilder.Entity<Folder>(entity =>
+    //        {
+    //            entity.HasKey(e => e.Id);
+    //            entity.HasIndex(e => new { e.UserId, e.ParentFolderId });
+    //            entity.HasIndex(e => e.IsDeleted);
+
+    //            // Soft delete filter
+    //            entity.HasQueryFilter(e => !e.IsDeleted);
+
+    //            // Self-referencing relationship
+    //            entity.HasOne(e => e.ParentFolder)
+    //                  .WithMany(e => e.SubFolders)
+    //                  .HasForeignKey(e => e.ParentFolderId)
+    //                  .OnDelete(DeleteBehavior.Restrict);
+
+    //            // Files relationship
+    //            entity.HasMany(e => e.Files)
+    //                  .WithOne(e => e.Folder)
+    //                  .HasForeignKey(e => e.FolderId)
+    //                  .OnDelete(DeleteBehavior.Cascade);
+    //        });
+
+    //        // ? FileItem Configuration
+    //        modelBuilder.Entity<FileItem>(entity =>
+    //        {
+    //            entity.HasKey(e => e.Id);
+    //            entity.HasIndex(e => new { e.UserId, e.FolderId });
+    //            entity.HasIndex(e => e.S3Key).IsUnique();
+    //            entity.HasIndex(e => e.IsDeleted);
+    //            entity.HasIndex(e => e.ContentType);
+    //            entity.HasIndex(e => e.CreatedAt);
+
+    //            // Soft delete filter
+    //            entity.HasQueryFilter(e => !e.IsDeleted);
+    //        });
+    //    }
+
+    //    // ? Override SaveChanges לטיפול אוטומטי בתאריכים
+    //    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    //    {
+    //        var currentUser = GetCurrentUserId();
+    //        var now = DateTime.UtcNow;
+
+    //        foreach (var entry in ChangeTracker.Entries<BaseEntity>())
+    //        {
+    //            switch (entry.State)
+    //            {
+    //                case EntityState.Added:
+    //                    entry.Entity.CreatedAt = now;
+    //                    entry.Entity.UpdatedAt = now;
+    //                    if (!string.IsNullOrEmpty(currentUser))
+    //                    {
+    //                        entry.Entity.CreatedBy = currentUser;
+    //                        entry.Entity.UpdatedBy = currentUser;
+    //                    }
+    //                    break;
+
+    //                case EntityState.Modified:
+    //                    entry.Entity.UpdatedAt = now;
+    //                    if (!string.IsNullOrEmpty(currentUser))
+    //                    {
+    //                        entry.Entity.UpdatedBy = currentUser;
+    //                    }
+    //                    // מנע שינוי של CreatedAt
+    //                    entry.Property(nameof(BaseEntity.CreatedAt)).IsModified = false;
+    //                    entry.Property(nameof(BaseEntity.CreatedBy)).IsModified = false;
+    //                    break;
+    //            }
+    //        }
+
+    //        try
+    //        {
+    //            return await base.SaveChangesAsync(cancellationToken);
+    //        }
+    //        catch (DbUpdateConcurrencyException ex)
+    //        {
+    //            // טיפול בOptimistic Concurrency conflicts
+    //            throw new InvalidOperationException("The record was modified by another user. Please refresh and try again.", ex);
+    //        }
+    //    }
+
+    //    public override int SaveChanges()
+    //    {
+    //        return SaveChangesAsync().GetAwaiter().GetResult();
+    //    }
+
+    //    private string? GetCurrentUserId()
+    //    {
+    //        return _httpContextAccessor?.HttpContext?.User?.FindFirst("userId")?.Value;
+    //    }
+    //}
+
     public class DataContext : DbContext
     {
-        public DataContext(DbContextOptions<DataContext> options) : base(options) {
-        }
+        private readonly IHttpContextAccessor? _httpContextAccessor;
 
-        public DbSet<User> Users { get; set; }
-        public DbSet<FileItem> Files { get; set; }
-        public DbSet<Folder> Folders { get; set; }
-
-        public override int SaveChanges()
+        public DataContext(DbContextOptions<DataContext> options, IHttpContextAccessor? httpContextAccessor = null)
+            : base(options)
         {
-            //AddTimestamps();
-            return base.SaveChanges();
+            _httpContextAccessor = httpContextAccessor;
         }
 
-        public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-        {
-            //AddTimestamps();
-            return base.SaveChangesAsync(cancellationToken);
-        }
-
-        private void AddTimestamps()
-        {
-            var entities = ChangeTracker.Entries()
-                .Where(x => x.Entity is BaseEntity && (x.State == EntityState.Added || x.State == EntityState.Modified));
-
-            var currentTime = DateTime.UtcNow;
-
-            foreach (var entity in entities)
-            {
-                if (entity.State == EntityState.Added)
-                {
-                    ((BaseEntity)entity.Entity).CreatedAt = currentTime;
-                }
-
-                ((BaseEntity)entity.Entity).UpdatedAt = currentTime;
-            }
-        }
+        public DbSet<User> Users { get; set; } = null!;
+        public DbSet<Folder> Folders { get; set; } = null!;
+        public DbSet<FileItem> Files { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -54,101 +160,114 @@ namespace FileKeeper_server_.net.Data
             modelBuilder.Entity<User>(entity =>
             {
                 entity.HasKey(e => e.Id);
-
-                entity.Property(e => e.Email)
-                    .IsRequired()
-                    .HasMaxLength(255);
                 entity.HasIndex(e => e.Email).IsUnique();
+                entity.HasIndex(e => e.IsDeleted);
 
-                entity.Property(e => e.FirstName)
-                    .IsRequired()
-                    .HasMaxLength(100);
+                // Soft delete filter
+                entity.HasQueryFilter(e => !e.IsDeleted);
 
-                entity.Property(e => e.LastName)
-                    .IsRequired()
-                    .HasMaxLength(100);
+                // One-to-many relationships
+                entity.HasMany(e => e.Folders)
+                      .WithOne(e => e.User)
+                      .HasForeignKey(e => e.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
 
-                entity.Property(e => e.PasswordHash)
-                    .IsRequired();
-
-                entity.Property(e => e.Role)
-                    .IsRequired()
-                    .HasDefaultValue("User");
-
-                entity.Property(e => e.CreatedAt)
-                    .IsRequired();
-                entity.Property(e => e.UpdatedAt)
-                    .IsRequired();
+                entity.HasMany(e => e.Files)
+                      .WithOne(e => e.User)
+                      .HasForeignKey(e => e.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
 
             // Folder Configuration
             modelBuilder.Entity<Folder>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.HasIndex(e => new { e.UserId, e.ParentFolderId });
+                entity.HasIndex(e => e.IsDeleted);
 
-                entity.Property(e => e.Name)
-                    .IsRequired()
-                    .HasMaxLength(255);
+                // Soft delete filter
+                entity.HasQueryFilter(e => !e.IsDeleted);
 
-                entity.Property(e => e.CreatedAt)
-                    .IsRequired();
-                entity.Property(e => e.UpdatedAt)
-                    .IsRequired();
+                // Self-referencing relationship
+                entity.HasOne(e => e.ParentFolder)
+                      .WithMany(e => e.SubFolders)
+                      .HasForeignKey(e => e.ParentFolderId)
+                      .OnDelete(DeleteBehavior.Restrict);
 
-                // Relations
-                entity.HasOne(f => f.User)
-                    .WithMany(u => u.Folders)
-                    .HasForeignKey(f => f.UserId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasOne(f => f.ParentFolder)
-                    .WithMany(f => f.SubFolders)
-                    .HasForeignKey(f => f.ParentFolderId)
-                    .IsRequired(false)
-                    .OnDelete(DeleteBehavior.Restrict);
-
-                // Performance Indexes
-                entity.HasIndex(e => new { e.ParentFolderId, e.UserId });
-                entity.HasIndex(e => e.Name);
+                // Files relationship
+                entity.HasMany(e => e.Files)
+                      .WithOne(e => e.Folder)
+                      .HasForeignKey(e => e.FolderId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
 
             // FileItem Configuration
             modelBuilder.Entity<FileItem>(entity =>
             {
                 entity.HasKey(e => e.Id);
+                entity.HasIndex(e => new { e.UserId, e.FolderId });
+                entity.HasIndex(e => e.S3Key).IsUnique();
+                entity.HasIndex(e => e.IsDeleted);
+                entity.HasIndex(e => e.ContentType);
+                entity.HasIndex(e => e.CreatedAt);
 
-                entity.Property(e => e.Name)
-                    .IsRequired()
-                    .HasMaxLength(255);
-
-                entity.Property(e => e.S3Key)
-                    .IsRequired()
-                    .HasMaxLength(1024);
-
-                entity.Property(e => e.ContentType)
-                    .IsRequired()
-                    .HasMaxLength(100);
-
-                entity.Property(e => e.CreatedAt)
-                    .IsRequired();
-                entity.Property(e => e.UpdatedAt)
-                    .IsRequired();
-
-                // Relations
-                entity.HasOne(f => f.User)
-                    .WithMany(u => u.Files)
-                    .HasForeignKey(f => f.UserId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasOne(f => f.Folder)
-                    .WithMany(f => f.Files)
-                    .HasForeignKey(f => f.FolderId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                // Performance Indexes
-                entity.HasIndex(e => new { e.FolderId, e.UserId });
-                entity.HasIndex(e => e.Name);
+                // Soft delete filter
+                entity.HasQueryFilter(e => !e.IsDeleted);
             });
+        }
+
+        // Override SaveChanges to handle audit fields automatically
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            var currentUser = GetCurrentUserId();
+            var now = DateTime.UtcNow;
+
+            foreach (var entry in ChangeTracker.Entries<BaseEntity>())
+            {
+                switch (entry.State)
+                {
+                    case EntityState.Added:
+                        entry.Entity.CreatedAt = now;
+                        entry.Entity.UpdatedAt = now;
+                        if (!string.IsNullOrEmpty(currentUser))
+                        {
+                            entry.Entity.CreatedBy = currentUser;
+                            entry.Entity.UpdatedBy = currentUser;
+                        }
+                        break;
+
+                    case EntityState.Modified:
+                        entry.Entity.UpdatedAt = now;
+                        if (!string.IsNullOrEmpty(currentUser))
+                        {
+                            entry.Entity.UpdatedBy = currentUser;
+                        }
+                        // Don't modify CreatedAt and CreatedBy on updates
+                        entry.Property(nameof(BaseEntity.CreatedAt)).IsModified = false;
+                        entry.Property(nameof(BaseEntity.CreatedBy)).IsModified = false;
+                        break;
+                }
+            }
+
+            try
+            {
+                return await base.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                // Handle Optimistic Concurrency conflicts
+                throw new InvalidOperationException("The record was modified by another user. Please refresh and try again.", ex);
+            }
+        }
+
+        public override int SaveChanges()
+        {
+            return SaveChangesAsync().GetAwaiter().GetResult();
+        }
+
+        private string? GetCurrentUserId()
+        {
+            return _httpContextAccessor?.HttpContext?.User?.FindFirst("userId")?.Value;
         }
     }
 }

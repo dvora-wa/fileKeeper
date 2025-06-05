@@ -1,7 +1,7 @@
 using System.Net;
 using System.Text.Json;
 
-namespace FileKeeper_server_.net.API.Middleware
+namespace server.net.API.Middleware
 {
     public class ErrorHandlingMiddleware
     {
@@ -22,22 +22,22 @@ namespace FileKeeper_server_.net.API.Middleware
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "An unhandled exception occurred");
                 await HandleExceptionAsync(context, ex);
             }
         }
 
-        private async Task HandleExceptionAsync(HttpContext context, Exception ex)
+        private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
         {
-            _logger.LogError(ex, "An unhandled exception occurred");
-
             context.Response.ContentType = "application/json";
 
-            var (statusCode, message) = ex switch
+            var (statusCode, message) = exception switch
             {
-                UnauthorizedAccessException => (HttpStatusCode.Unauthorized, "Unauthorized access"),
-                InvalidOperationException => (HttpStatusCode.BadRequest, ex.Message),
-                ArgumentException => (HttpStatusCode.BadRequest, ex.Message),
-                _ => (HttpStatusCode.InternalServerError, "An internal server error occurred")
+                UnauthorizedAccessException => (HttpStatusCode.Unauthorized, "לא מורשה לגשת למשאב זה"),
+                InvalidOperationException => (HttpStatusCode.BadRequest, exception.Message),
+                ArgumentException => (HttpStatusCode.BadRequest, exception.Message),
+                KeyNotFoundException => (HttpStatusCode.NotFound, "המשאב לא נמצא"),
+                _ => (HttpStatusCode.InternalServerError, "אירעה שגיאה פנימית בשרווח")
             };
 
             context.Response.StatusCode = (int)statusCode;
@@ -45,12 +45,16 @@ namespace FileKeeper_server_.net.API.Middleware
             var response = new
             {
                 error = message,
-                details = context.RequestServices.GetService<IWebHostEnvironment>()?.IsDevelopment() == true
-                    ? ex.ToString()
-                    : null
+                statusCode = (int)statusCode,
+                timestamp = DateTime.UtcNow
             };
 
-            await context.Response.WriteAsync(JsonSerializer.Serialize(response));
+            var jsonResponse = JsonSerializer.Serialize(response, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            });
+
+            await context.Response.WriteAsync(jsonResponse);
         }
     }
 }
