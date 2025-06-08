@@ -1,104 +1,120 @@
-import React, { useState } from 'react';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
-import { TextField, Button, Box, Typography, Avatar } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-import { login } from '../../services/authService';
-import { useAuth } from '../../contexts/AuthContext';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import React from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { Link, useNavigate } from 'react-router-dom'
+import { Mail, Lock } from 'lucide-react'
+import { useAuthStore } from '../../store'
+import { Button, Card, CardContent, CardHeader, CardTitle, Input } from '../ui'
 
-const validationSchema = Yup.object({
-  email: Yup.string()
-    .email('Invalid email address')
-    .required('Email is required'),
-  password: Yup.string()
-    .required('Password is required'),
-});
+// import { Button, Input, Card, CardHeader, CardTitle, CardContent } from '@/components/ui'
+// import { useAuthStore } from '@/store'
+// import { LoginDto } from '@/types'
 
-const LoginForm: React.FC = () => {
-  const navigate = useNavigate();
-  const { setUser } = useAuth();
-  const [errorMessage, setErrorMessage] = useState<string>('');
+const loginSchema = z.object({
+  email: z
+    .string()
+    .min(1, 'כתובת מייל נדרשת')
+    .email('כתובת מייל לא תקינה'),
+  password: z
+    .string()
+    .min(1, 'סיסמה נדרשת'),
+  rememberMe: z.boolean().optional()
+})
 
-  const formik = useFormik({
-    initialValues: {
-      email: '',
-      password: '',
-    },
-    validationSchema,
-    onSubmit: async (values) => {
-      try {
-        setErrorMessage(''); // ניקוי הודעות שגיאה קודמות
-        const response = await login({
-          email: values.email.trim(), // הסרת רווחים מיותרים
-          password: values.password
-        });
-        setUser(response.user);
-        navigate('/');
-      } catch (error: any) {
-        console.error('Login failed:', error);
-        // טיפול בשגיאות ספציפיות
-        if (error.response?.data) {
-          setErrorMessage(error.response.data);
-        } else {
-          setErrorMessage('שגיאה בהתחברות. אנא נסה שנית.');
-        }
-      }
-    },
-  });
+type LoginFormData = z.infer<typeof loginSchema>
+
+export const LoginForm: React.FC = () => {
+  const navigate = useNavigate()
+  const { login, isLoading } = useAuthStore()
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors }
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      rememberMe: false
+    }
+  })
+
+  const onSubmit = async (data: LoginFormData) => {
+    try {
+      await login(data)
+      navigate('/dashboard')
+    } catch (error) {
+      // Error is handled by the store and displayed via toast
+    }
+  }
 
   return (
-    <Box sx={{ width: '100%' }}>
-      <Box sx={{ mb: 3, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Avatar sx={{ m: 1, bgcolor: 'primary.main' }}>
-          <LockOutlinedIcon />
-        </Avatar>
-        <Typography component="h1" variant="h5">
-          התחברות
-        </Typography>
-      </Box>
-      <Box component="form" onSubmit={formik.handleSubmit}>
-        <TextField
-          fullWidth
-          id="email"
-          name="email"
-          label="אימייל"
-          autoComplete="email"
-          value={formik.values.email}
-          onChange={formik.handleChange}
-          error={formik.touched.email && Boolean(formik.errors.email)}
-          helperText={formik.touched.email && formik.errors.email}
-          margin="normal"
-        />
-        <TextField
-          fullWidth
-          id="password"
-          name="password"
-          label="סיסמה"
-          type="password"
-          autoComplete="current-password"
-          value={formik.values.password}
-          onChange={formik.handleChange}
-          error={formik.touched.password && Boolean(formik.errors.password)}
-          helperText={formik.touched.password && formik.errors.password}
-          margin="normal"
-        />
-        {errorMessage && (
-          <Typography color="error" sx={{ mt: 2, textAlign: 'center' }}>
-            {errorMessage}
-          </Typography>
-        )}
-        <Button
-          type="submit"
-          fullWidth
-          variant="contained"
-          sx={{ mt: 3, mb: 2 }}
-        >
-          התחבר
-        </Button>
-      </Box>
-    </Box>
-  );
-};
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold text-primary">
+            FileKeeper
+          </CardTitle>
+          <p className="text-muted-foreground">התחבר לחשבון שלך</p>
+        </CardHeader>
+        
+        <CardContent>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <Input
+              {...register('email')}
+              type="email"
+              label="כתובת מייל"
+              placeholder="הכנס את כתובת המייל שלך"
+              leftIcon={<Mail size={16} />}
+              error={errors.email?.message}
+              autoComplete="email"
+              dir="ltr"
+            />
 
-export default LoginForm;
+            <Input
+              {...register('password')}
+              type="password"
+              label="סיסמה"
+              placeholder="הכנס את הסיסמה שלך"
+              leftIcon={<Lock size={16} />}
+              error={errors.password?.message}
+              autoComplete="current-password"
+              dir="ltr"
+            />
+
+            <div className="flex items-center">
+              <input
+                {...register('rememberMe')}
+                type="checkbox"
+                id="rememberMe"
+                className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
+              />
+              <label htmlFor="rememberMe" className="mr-2 text-sm text-muted-foreground">
+                זכור אותי
+              </label>
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full"
+              loading={isLoading}
+              disabled={isLoading}
+            >
+              התחבר
+            </Button>
+
+            <div className="text-center text-sm">
+              <span className="text-muted-foreground">אין לך חשבון? </span>
+              <Link
+                to="/auth/register"
+                className="text-primary hover:underline font-medium"
+              >
+                הירשם כאן
+              </Link>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
