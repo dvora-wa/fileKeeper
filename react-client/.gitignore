@@ -22,29 +22,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-# צור קובץ .gitignore חדש ומינימלי
-echo "# .NET
-bin/
-obj/
-.vs/
-Debug/
-Release/
-
-# Node
-node_modules/
-dist/
-build/
-
-# IDE
-*.suo
-*.user
-.vscode/
-
-# Temp
-~$*
-*~
-
-# Compiled
-*.dll
-*.pdb
-*.exe" > .gitignore

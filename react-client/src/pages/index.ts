@@ -1,7 +1,0 @@
-export { LoginPage } from './auth/LoginPage'
-export { RegisterPage } from './auth/RegisterPage'
-export { DashboardPage } from './dashboard/DashboardPage'
-export { FilesPage } from './files/FilesPage'
-export { FolderPage } from './folders/FolderPage'
-export { ProfilePage } from './profile/ProfilePage'
-export { NotFoundPage } from './NotFoundPage'
