@@ -3,10 +3,10 @@
 import type React from "react"
 import { useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
-import { Button } from "../components/ui/button"
-import { Input } from "../components/ui/input"
+import { Button } from "../components/ui/Button"
+import { Input } from "../components/ui/Input"
 import { Label } from "../components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/Card"
 import { Alert, AlertDescription } from "../components/ui/alert"
 import { Checkbox } from "../components/ui/checkbox"
 import { Loader2, FileText, Eye, EyeOff, AlertCircle } from "lucide-react"
@@ -54,10 +54,12 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         {/* Logo and Description */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
-            <FileText className="w-8 h-8 text-white" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
+          <Link to="/" className="inline-block">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
+              <FileText className="w-8 h-8 text-white" />
+            </div>
+          </Link>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back to FileKeeper</h1>
           <p className="text-gray-600">Sign in to your file management system</p>
         </div>
 

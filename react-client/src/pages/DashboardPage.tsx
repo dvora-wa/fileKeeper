@@ -3,8 +3,8 @@
 import { useAuth } from "../contexts/auth-context"
 import { useNavigate } from "react-router-dom"
 import { useEffect } from "react"
-import { Button } from "../components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
+import { Button } from "../components/ui/Button"
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card"
 import { FileText, LogOut, User } from "lucide-react"
 
 export default function DashboardPage() {
@@ -45,7 +45,7 @@ export default function DashboardPage() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <FileText className="h-8 w-8 text-blue-600 mr-3" />
-              <h1 className="text-xl font-semibold text-gray-900">File Management System</h1>
+              <h1 className="text-xl font-semibold text-gray-900">FileKeeper</h1>
             </div>
 
             <div className="flex items-center space-x-4">
@@ -71,7 +71,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <p className="text-gray-600">Welcome to your file management system.</p>
+                <p className="text-gray-600">Welcome to your FileKeeper dashboard.</p>
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <h3 className="font-medium text-blue-900 mb-2">Account Information:</h3>
                   <ul className="text-sm text-blue-800 space-y-1">
