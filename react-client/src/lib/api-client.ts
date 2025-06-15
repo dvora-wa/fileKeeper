@@ -1,6 +1,7 @@
 // 🔧 API Client with error handling - Adapted for Vite
 import type { LoginRequest, RegisterRequest, AuthResponse, User, ApiError } from "../types/api"
 
+// ✅ Updated to use the correct environment variable and add /api suffix
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api"
 
 class ApiClient {
@@ -42,6 +43,8 @@ class ApiClient {
     }
 
     try {
+      console.log(`🌐 API Request: ${url}`) // Debug log
+
       const response = await fetch(url, {
         ...options,
         headers,
@@ -61,6 +64,7 @@ class ApiClient {
 
       return response.json()
     } catch (error) {
+      console.error(`❌ API Error for ${url}:`, error) // Debug log
       if (error instanceof Error) {
         throw error
       }
@@ -103,3 +107,6 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient(API_BASE_URL)
+
+// Debug log to see what URL is being used
+console.log(`🔗 API Base URL: ${API_BASE_URL}`)
