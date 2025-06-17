@@ -84,9 +84,10 @@ class ApiClient {
   }
 
   async register(data: RegisterRequest): Promise<AuthResponse> {
+    const { confirmPassword, ...requestBody } = data 
     const response = await this.request<AuthResponse>("/auth/register", {
       method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify(requestBody),
     })
 
     this.setToken(response.token)
