@@ -10,6 +10,7 @@ using server.net.Data;
 using server.net.Data.Repositories;
 using server.net.API.Middleware;
 using Microsoft.OpenApi.Models;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
