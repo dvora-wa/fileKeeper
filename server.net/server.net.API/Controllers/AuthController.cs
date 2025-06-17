@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace server.net.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/auth")]
     [ApiController]
     public class AuthController : ControllerBase
     {
