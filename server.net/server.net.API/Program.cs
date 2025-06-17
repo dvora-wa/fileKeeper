@@ -32,8 +32,24 @@ else
 var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
 builder.WebHost.UseUrls($"http://*:{port}");
 
+// Controllers with JSON configuration for camelCase
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Configure JSON serialization to use camelCase
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
+
+        // Additional JSON options for better compatibility
+        options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+        options.JsonSerializerOptions.WriteIndented = builder.Environment.IsDevelopment();
+
+        // Handle enum serialization
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+    });
+
 // Basic services
-builder.Services.AddControllers();
+// builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHttpContextAccessor();
 
