@@ -1,8 +1,15 @@
-// 🔧 API Client with error handling - Adapted for Vite
-import type { LoginRequest, RegisterRequest, AuthResponse, User, ApiError } from "../types/api"
+import type {
+  LoginRequest,
+  RegisterRequest,
+  AuthResponse,
+  User,
+  ApiError,
+  Folder,
+  CreateFolderRequest,
+} from "../types/api"
 
-// ✅ Updated to use the correct environment variable and add /api suffix
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api"
+console.log("🔗 API Base URL:", API_BASE_URL)
 
 class ApiClient {
   private baseUrl: string
@@ -10,7 +17,6 @@ class ApiClient {
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl
-    // Load token from localStorage on client side
     if (typeof window !== "undefined") {
       this.token = localStorage.getItem("auth_token")
     }
@@ -32,6 +38,10 @@ class ApiClient {
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`
+    console.log("🌐 API Request:", url)
+    if (options.body) {
+      console.log("📤 Request Data:", options.body)
+    }
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -43,28 +53,39 @@ class ApiClient {
     }
 
     try {
-      console.log(`🌐 API Request: ${url}`) // Debug log
-
       const response = await fetch(url, {
         ...options,
         headers,
       })
 
+      console.log("📥 Response Status:", response.status)
+
       if (!response.ok) {
-        const errorData: ApiError = await response.json().catch(() => ({
-          error: `HTTP ${response.status}: ${response.statusText}`,
-        }))
-        throw new Error(errorData.error || `HTTP ${response.status}`)
+        const errorText = await response.text()
+        console.log("❌ Error Response:", errorText)
+
+        let errorData: ApiError
+        try {
+          errorData = JSON.parse(errorText)
+        } catch {
+          errorData = { error: `HTTP ${response.status}: ${response.statusText}` }
+        }
+
+        const error = new Error(errorData.error || `HTTP ${response.status}`)
+        ;(error as any).details = errorData.details
+        ;(error as any).status = response.status
+        throw error
       }
 
-      // Handle empty responses (like 204 No Content)
       if (response.status === 204) {
         return {} as T
       }
 
-      return response.json()
+      const responseData = await response.json()
+      console.log("✅ Success Response:", responseData)
+      return responseData
     } catch (error) {
-      console.error(`❌ API Error for ${url}:`, error) // Debug log
+      console.error(`❌ API Error for ${url}:`, error)
       if (error instanceof Error) {
         throw error
       }
@@ -78,18 +99,15 @@ class ApiClient {
       method: "POST",
       body: JSON.stringify(data),
     })
-
     this.setToken(response.token)
     return response
   }
 
   async register(data: RegisterRequest): Promise<AuthResponse> {
-
     const response = await this.request<AuthResponse>("/auth/register", {
       method: "POST",
       body: JSON.stringify(data),
     })
-
     this.setToken(response.token)
     return response
   }
@@ -105,9 +123,32 @@ class ApiClient {
   async getCurrentUser(): Promise<User> {
     return this.request<User>("/users/me")
   }
+
+  // 🗂️ Folder Management
+  async getFolders(parentFolderId?: string): Promise<Folder[]> {
+    const params = parentFolderId ? `?parentFolderId=${parentFolderId}` : ""
+    return this.request<Folder[]>(`/folders${params}`)
+  }
+
+  async createFolder(data: CreateFolderRequest): Promise<Folder> {
+    return this.request<Folder>("/folders", {
+      method: "POST",
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteFolder(folderId: string): Promise<void> {
+    return this.request(`/folders/${folderId}`, {
+      method: "DELETE",
+    })
+  }
+
+  async updateFolder(folderId: string, data: CreateFolderRequest): Promise<void> {
+    return this.request(`/folders/${folderId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    })
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL)
-
-// Debug log to see what URL is being used
-console.log(`🔗 API Base URL: ${API_BASE_URL}`)

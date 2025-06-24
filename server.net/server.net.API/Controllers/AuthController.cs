@@ -29,10 +29,21 @@ namespace server.net.API.Controllers
         {
             try
             {
-                // ✅ Model validation אוטומטי
+                // ✅ שיפור טיפול בשגיאות וולידציה
                 if (!ModelState.IsValid)
                 {
-                    return BadRequest(ModelState);
+                    var errors = ModelState
+                        .Where(x => x.Value.Errors.Count > 0)
+                        .ToDictionary(
+                            kvp => kvp.Key,
+                            kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                        );
+
+                    return BadRequest(new
+                    {
+                        error = "Validation failed",
+                        details = errors
+                    });
                 }
 
                 var result = await _userService.RegisterAsync(dto);
@@ -48,13 +59,10 @@ namespace server.net.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error during registration");
-                return StatusCode(500, new { error = "אירעה שגיאה בהרשמה. נסה שוב מאוחר יותר." });
+                return StatusCode(500, new { error = "An error occurred during registration. Please try again later." });
             }
         }
 
-        /// <summary>
-        /// התחברות משתמש
-        /// </summary>
         [HttpPost("login")]
         [ProducesResponseType(typeof(AuthResponseDto), 200)]
         [ProducesResponseType(typeof(ValidationProblemDetails), 400)]
@@ -65,7 +73,18 @@ namespace server.net.API.Controllers
             {
                 if (!ModelState.IsValid)
                 {
-                    return BadRequest(ModelState);
+                    var errors = ModelState
+                        .Where(x => x.Value.Errors.Count > 0)
+                        .ToDictionary(
+                            kvp => kvp.Key,
+                            kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                        );
+
+                    return BadRequest(new
+                    {
+                        error = "Validation failed",
+                        details = errors
+                    });
                 }
 
                 var result = await _userService.LoginAsync(dto);
@@ -81,13 +100,10 @@ namespace server.net.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error during login");
-                return StatusCode(500, new { error = "אירעה שגיאה בהתחברות. נסה שוב מאוחר יותר." });
+                return StatusCode(500, new { error = "An error occurred during login. Please try again later." });
             }
         }
 
-        /// <summary>
-        /// רענון טוקן
-        /// </summary>
         [HttpPost("refresh")]
         [Authorize]
         [ProducesResponseType(typeof(AuthResponseDto), 200)]
@@ -103,20 +119,15 @@ namespace server.net.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Token refresh failed");
-                return Unauthorized(new { error = "רענון הטוקן נכשל" });
+                return Unauthorized(new { error = "Token refresh failed" });
             }
         }
 
-        /// <summary>
-        /// התנתקות (לוגיקת client-side בעיקר)
-        /// </summary>
         [HttpPost("logout")]
         [Authorize]
         public IActionResult Logout()
         {
-            // בגישה stateless עם JWT, הלוגאוט הוא client-side
-            // כאן אפשר להוסיף blacklist של tokens אם נדרש
-            return Ok(new { message = "התנתקת בהצלחה" });
+            return Ok(new { message = "Logged out successfully" });
         }
 
         private Guid GetCurrentUserId()
@@ -126,7 +137,7 @@ namespace server.net.API.Controllers
             {
                 return userId;
             }
-            throw new UnauthorizedAccessException("מזהה משתמש לא תקין");
+            throw new UnauthorizedAccessException("Invalid user ID");
         }
     }
 }

@@ -51,6 +51,7 @@ builder.Services.AddControllers()
 
 // Basic services
 // builder.Services.AddControllers();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddHttpContextAccessor();
 
@@ -105,7 +106,12 @@ builder.Services.AddCors(options =>
               .AllowCredentials();
     });
 });
-
+// Add route options for case insensitive routing
+builder.Services.Configure<RouteOptions>(options =>
+{
+    options.LowercaseUrls = true;
+    options.LowercaseQueryStrings = true;
+});
 // Rate Limiting - using appsettings configuration
 var rateLimitConfig = builder.Configuration.GetSection("RateLimit");
 var permitLimit = rateLimitConfig.GetValue<int>("PermitLimit", 100);
