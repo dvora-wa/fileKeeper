@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
-import { apiClient } from "../lib/api-client"
+import { folderApi } from "../lib/api"
 import type { Folder, CreateFolderRequest } from "../types/api"
 
 interface FolderContextType {
@@ -35,7 +35,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
       setError(null)
       console.log("📁 Loading folders for parent:", parentFolderId || "root")
 
-      const foldersData = await apiClient.getFolders(parentFolderId)
+      const foldersData = await folderApi.getFolders(parentFolderId)
       setFolders(foldersData)
 
       console.log("✅ Loaded folders:", foldersData)
@@ -43,6 +43,11 @@ export function FolderProvider({ children }: { children: ReactNode }) {
       const errorMessage = err instanceof Error ? err.message : "Failed to load folders"
       setError(errorMessage)
       console.error("❌ Error loading folders:", err)
+
+      // Show user-friendly error for AWS issues
+      if (errorMessage.includes("AWS") || errorMessage.includes("S3")) {
+        setError("AWS S3 is not configured. Please check server configuration or use mock mode for development.")
+      }
     } finally {
       setLoading(false)
     }
@@ -54,17 +59,23 @@ export function FolderProvider({ children }: { children: ReactNode }) {
       setError(null)
       console.log("📁 Creating folder:", data)
 
-      const newFolder = await apiClient.createFolder(data)
+      const newFolder = await folderApi.createFolder(data)
 
       // Add to current folders list
       setFolders((prev) => [...prev, newFolder])
 
       console.log("✅ Folder created:", newFolder)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to create folder"
+      let errorMessage = err instanceof Error ? err.message : "Failed to create folder"
+
+      // Handle AWS configuration errors
+      if (errorMessage.includes("AWS") || errorMessage.includes("S3")) {
+        errorMessage = "AWS S3 configuration missing. Please configure AWS credentials in your server settings."
+      }
+
       setError(errorMessage)
       console.error("❌ Error creating folder:", err)
-      throw err // Re-throw so the component can handle it
+      throw new Error(errorMessage)
     }
   }
 
@@ -74,7 +85,7 @@ export function FolderProvider({ children }: { children: ReactNode }) {
       setError(null)
       console.log("🗑️ Deleting folder:", folderId)
 
-      await apiClient.deleteFolder(folderId)
+      await folderApi.deleteFolder(folderId)
 
       // Remove from folders list
       setFolders((prev) => prev.filter((folder) => folder.id !== folderId))
