@@ -6,9 +6,15 @@ import type {
   ApiError,
   Folder,
   CreateFolderRequest,
+  FileUploadUrlResponse,
+  FileItem,
+  FileDownloadUrlResponse,
+  SearchFilesRequest,
+  PaginatedResult,
 } from "../types/api"
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api"
+
 console.log("🔗 API Base URL:", API_BASE_URL)
 
 class ApiClient {
@@ -38,10 +44,8 @@ class ApiClient {
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`
+
     console.log("🌐 API Request:", url)
-    if (options.body) {
-      console.log("📤 Request Data:", options.body)
-    }
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
@@ -53,6 +57,8 @@ class ApiClient {
     }
 
     try {
+      console.log("📤 Request Data:", options.body)
+
       const response = await fetch(url, {
         ...options,
         headers,
@@ -85,29 +91,28 @@ class ApiClient {
       console.log("✅ Success Response:", responseData)
       return responseData
     } catch (error) {
-      console.error(`❌ API Error for ${url}:`, error)
-      if (error instanceof Error) {
-        throw error
-      }
-      throw new Error("Network error occurred")
+      console.log("❌ API Error for", url + ":", error)
+      throw error
     }
   }
 
-  // 🔐 Authentication Methods
-  async login(data: LoginRequest): Promise<AuthResponse> {
-    const response = await this.request<AuthResponse>("/auth/login", {
-      method: "POST",
-      body: JSON.stringify(data),
-    })
-    this.setToken(response.token)
-    return response
-  }
-
+  // Auth methods
   async register(data: RegisterRequest): Promise<AuthResponse> {
     const response = await this.request<AuthResponse>("/auth/register", {
       method: "POST",
       body: JSON.stringify(data),
     })
+
+    this.setToken(response.token)
+    return response
+  }
+
+  async login(data: LoginRequest): Promise<AuthResponse> {
+    const response = await this.request<AuthResponse>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify(data),
+    })
+
     this.setToken(response.token)
     return response
   }
@@ -124,7 +129,7 @@ class ApiClient {
     return this.request<User>("/users/me")
   }
 
-  // 🗂️ Folder Management
+  // 🗂️ Folder methods
   async getFolders(parentFolderId?: string): Promise<Folder[]> {
     const params = parentFolderId ? `?parentFolderId=${parentFolderId}` : ""
     return this.request<Folder[]>(`/folders${params}`)
@@ -149,6 +154,75 @@ class ApiClient {
       body: JSON.stringify(data),
     })
   }
+
+  // 📁 File methods
+  async getUploadUrl(fileName: string, folderId: string): Promise<FileUploadUrlResponse> {
+    return this.request<FileUploadUrlResponse>("/files/upload-url", {
+      method: "POST",
+      body: JSON.stringify({ fileName, folderId }),
+    })
+  }
+
+  async uploadFileDirect(formData: FormData): Promise<FileItem> {
+    // For direct upload, we don't set Content-Type to let browser set it with boundary
+    const headers: Record<string, string> = {}
+    if (this.token) {
+      headers.Authorization = `Bearer ${this.token}`
+    }
+
+    const response = await fetch(`${this.baseUrl}/files/direct-upload`, {
+      method: "POST",
+      headers,
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      let errorData: ApiError
+      try {
+        errorData = JSON.parse(errorText)
+      } catch {
+        errorData = { error: `HTTP ${response.status}: ${response.statusText}` }
+      }
+      throw new Error(errorData.error || `HTTP ${response.status}`)
+    }
+
+    return response.json()
+  }
+
+  async getFolderFiles(folderId: string): Promise<FileItem[]> {
+    return this.request<FileItem[]>(`/files/folder/${folderId}`)
+  }
+
+  async getDownloadUrl(fileId: string): Promise<FileDownloadUrlResponse> {
+    return this.request<FileDownloadUrlResponse>(`/files/download/${fileId}`)
+  }
+
+  async deleteFile(fileId: string): Promise<void> {
+    return this.request(`/files/${fileId}`, {
+      method: "DELETE",
+    })
+  }
+
+  async searchFiles(params: SearchFilesRequest): Promise<PaginatedResult<FileItem>> {
+    const searchParams = new URLSearchParams()
+
+    if (params.searchTerm) searchParams.append("searchTerm", params.searchTerm)
+    if (params.contentType) searchParams.append("contentType", params.contentType)
+    if (params.fromDate) searchParams.append("fromDate", params.fromDate)
+    if (params.toDate) searchParams.append("toDate", params.toDate)
+    if (params.folderId) searchParams.append("folderId", params.folderId)
+    if (params.pageSize) searchParams.append("pageSize", params.pageSize.toString())
+    if (params.pageNumber) searchParams.append("pageNumber", params.pageNumber.toString())
+    if (params.sortBy) searchParams.append("sortBy", params.sortBy)
+    if (params.sortDescending) searchParams.append("sortDescending", params.sortDescending.toString())
+
+    return this.request<PaginatedResult<FileItem>>(`/files/search?${searchParams}`)
+  }
 }
 
 export const apiClient = new ApiClient(API_BASE_URL)
+
+// Re-export everything from the new API structure for backward compatibility
+export * from "./api"
+export { apiClient as default } from "./api"
