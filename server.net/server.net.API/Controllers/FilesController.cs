@@ -368,5 +368,46 @@ namespace server.net.API.Controllers
                 // לא זורקים exception כי זה לא קריטי
             }
         }
+
+        [HttpPost("confirm-upload")]
+        public async Task<ActionResult<FileItemDto>> ConfirmUpload([FromBody] ConfirmUploadDto dto)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+
+                var file = await _context.Files
+                    .Where(f => f.Id == Guid.Parse(dto.FileId) && f.UserId == userId)
+                    .FirstOrDefaultAsync();
+
+                if (file == null)
+                {
+                    return NotFound(new { error = "קובץ לא נמצא" });
+                }
+
+                file.Description = dto.Description ?? "";
+                file.Tags = dto.Tags ?? "";
+                file.Size = await _s3Service.GetFileSizeAsync(file.S3Key);
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new FileItemDto
+                {
+                    Id = file.Id,
+                    Name = file.Name,
+                    ContentType = file.ContentType,
+                    Size = file.Size,
+                    CreatedAt = file.CreatedAt,
+                    Description = file.Description,
+                    Tags = file.Tags
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error confirming upload for file: {FileId}", dto.FileId);
+                return StatusCode(500, new { error = "שגיאה באישור ההעלאה" });
+            }
+        }
+
     }
 }
