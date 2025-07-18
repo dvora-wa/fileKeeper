@@ -1,9 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { useNavigate } from "react-router-dom"
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card"
-import FolderTree from "../folders/FolderTree"
 import CreateFolderModal from "../folders/CreateFolderModal"
 import { useFolders } from "../../contexts/folder-context"
 import { 
@@ -16,14 +14,12 @@ import {
   TrendingUp,
   Calendar,
   Activity,
-  Users,
   Clock
 } from "lucide-react"
 
 export default function DashboardContent() {
   const [showCreateFolder, setShowCreateFolder] = useState(false)
   const { folders } = useFolders()
-  const navigate = useNavigate()
 
   // Mock statistics data - in real app, this would come from API
   const stats = [
@@ -72,9 +68,6 @@ export default function DashboardContent() {
     { action: "Upload", file: "Work Presentation.pptx", time: "Yesterday", type: "upload" },
   ]
 
-  const handleFolderClick = (folderId: string, folderName: string) => {
-    navigate(`/files/${folderId}?name=${encodeURIComponent(folderName)}`)
-  }
 
   return (
     <div className="space-y-6">

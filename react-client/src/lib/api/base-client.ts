@@ -64,9 +64,13 @@ export class BaseApiClient {
           errorData = { error: `HTTP ${response.status}: ${response.statusText}` }
         }
 
-        const error = new Error(errorData.error || `HTTP ${response.status}`)
-        ;(error as any).details = errorData.details
-        ;(error as any).status = response.status
+        interface ApiClientError extends Error {
+          details?: unknown
+          status?: number
+        }
+        const error: ApiClientError = new Error(errorData.error || `HTTP ${response.status}`)
+        error.details = errorData.details
+        error.status = response.status
         throw error
       }
 

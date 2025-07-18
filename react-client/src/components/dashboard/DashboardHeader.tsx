@@ -10,8 +10,6 @@ import {
   Menu,
   X,
   Folder,
-  Upload,
-  BarChart3,
   Settings,
   Home,
   Search,

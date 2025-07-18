@@ -128,7 +128,7 @@ export default function FileUpload({ folderId, onUploadComplete }: FileUploadPro
   }
 
   // Get file icon
-  const getFileIcon = (file: File) => {
+  const getFileIcon = (file: FileWithPreview) => {
     console.log("File type:", file)
     const contentType = file.type || ""
     const fileName = file.name || ""

@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { useAuth } from "../contexts/auth-context"
-import { useNavigate } from "react-router-dom"
 import { useEffect } from "react"
 import { Link } from "react-router-dom"
 import { Button } from "../components/ui/Button"
@@ -18,14 +17,12 @@ import {
   Menu,
   X,
   Folder,
-  Upload,
   BarChart3,
   Settings
 } from "lucide-react"
 
 export default function HomePage() {
   const { user, loading, logout } = useAuth()
-  const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {

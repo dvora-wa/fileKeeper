@@ -1,8 +1,6 @@
 "use client"
 
 import { Button } from "../ui/Button"
-import { Card, CardContent } from "../ui/Card"
-import { Upload } from "lucide-react"
 import FileUpload from "../upload/FileUpload"
 
 interface UploadSectionProps {

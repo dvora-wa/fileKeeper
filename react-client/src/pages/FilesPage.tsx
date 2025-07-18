@@ -453,7 +453,7 @@ export function FilesList({ folderId, onUploadClick }: FilesListProps) {
   )
 }
 import UploadSection from "../components/dashboard/UploadSection"
-import { FileProvider, useFiles } from "../contexts/file-context"
+import { useFiles } from "../contexts/file-context"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card"
 import { Button } from "../components/ui/Button"
 import { Alert, AlertDescription } from "../components/ui/alert"

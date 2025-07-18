@@ -14,7 +14,6 @@ import {
   ImageIcon, 
   Video, 
   Music, 
-  Calendar,
   FolderIcon
 } from "lucide-react"
 

@@ -6,14 +6,14 @@ import { useAuth } from "../contexts/auth-context"
 import { FolderProvider } from "../contexts/folder-context"
 import { Button } from "../components/ui/Button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card"
-import { ArrowLeft, Home, Folder, FolderOpen, Calendar, User, LogOut } from "lucide-react"
+import { ArrowLeft, Folder, FolderOpen, Calendar } from "lucide-react"
 import FolderTree from "../components/folders/FolderTree"
 import CreateFolderModal from "../components/folders/CreateFolderModal"
 import { useFolders } from "../contexts/folder-context"
 
 function FoldersPageContent() {
     const [showCreateFolder, setShowCreateFolder] = useState(false)
-    const { folders, loading } = useFolders()
+    const { folders } = useFolders()
     const navigate = useNavigate()
 
     const handleFolderClick = (folderId: string, folderName: string) => {

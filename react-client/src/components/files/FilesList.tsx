@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState} from "react"
 import { Button } from "../ui/Button"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card"
 import { Alert, AlertDescription } from "../ui/alert"
@@ -40,8 +40,8 @@ interface FilesListProps {
   onUploadClick: () => void
 }
 
-export default function FilesList({ folderId, onUploadClick }: FilesListProps) {
-  const { files, loading, error, loadFiles, deleteFile, downloadFile } = useFiles()
+export default function FilesList({ onUploadClick }: FilesListProps) {
+  const { files, loading, error,  deleteFile, downloadFile } = useFiles()
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [deletingId, setDeletingId] = useState<string | null>(null)
 

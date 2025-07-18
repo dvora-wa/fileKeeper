@@ -13,8 +13,6 @@ import {
   Settings,
   User,
   Shield,
-  Bell,
-  Palette,
   Save,
   Eye,
   EyeOff,
