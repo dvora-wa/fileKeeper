@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "../ui/Button"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card"
 import { Alert, AlertDescription } from "../ui/alert"
@@ -16,6 +16,20 @@ import {
   Grid3X3,
   List,
   Upload,
+  FileArchive,
+  Code,
+  FileSpreadsheet,
+  Presentation,
+  Database,
+  FileType,
+  Monitor,
+  Palette,
+  Book,
+  Calendar,
+  Settings,
+  Shield,
+  Zap,
+  HardDrive,
 } from "lucide-react"
 import { useFiles } from "../../contexts/file-context"
 import { formatFileSize, formatDate } from "../../lib/utils"
@@ -31,20 +45,126 @@ export default function FilesList({ folderId, onUploadClick }: FilesListProps) {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
+  // const hasLoaded = useRef(false)
+
   // Load files when folder changes
-  useEffect(() => {
-    if (folderId) {
-      loadFiles(folderId)
-    }
-  }, [folderId, loadFiles])
+  // useEffect(() => {
+  //   if (!hasLoaded.current && folderId) {
+  //     loadFiles(folderId);
+  //     hasLoaded.current = true
+  //   }
+  // }, [])
 
   // Get file icon
   const getFileIcon = (file: FileItem) => {
-    if (file.contentType.startsWith("image/")) return <ImageIcon className="w-6 h-6 text-blue-500" />
-    if (file.contentType.startsWith("video/")) return <Video className="w-6 h-6 text-purple-500" />
-    if (file.contentType.startsWith("audio/")) return <Music className="w-6 h-6 text-green-500" />
+    console.log("File type:", file)
+    const contentType = file.contentType || ""
+    const fileName = file.name || ""
+    const extension = fileName.toLowerCase().split('.').pop() || ""
+
+    // Images
+    if (contentType.startsWith("image/") ||
+      ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'ico', 'tiff'].includes(extension)) {
+      return <ImageIcon className="w-6 h-6 text-blue-500" />
+    }
+
+    // Videos
+    if (contentType.startsWith("video/") ||
+      ['mp4', 'avi', 'mkv', 'mov', 'wmv', 'flv', 'webm', 'm4v', '3gp'].includes(extension)) {
+      return <Video className="w-6 h-6 text-purple-500" />
+    }
+
+    // Audio
+    if (contentType.startsWith("audio/") ||
+      ['mp3', 'wav', 'flac', 'aac', 'ogg', 'wma', 'm4a', 'opus'].includes(extension)) {
+      return <Music className="w-6 h-6 text-green-500" />
+    }
+
+    // Archives
+    if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz', 'iso', 'dmg'].includes(extension)) {
+      return <FileArchive className="w-6 h-6 text-orange-500" />
+    }
+
+    // Code files
+    if (['js', 'ts', 'jsx', 'tsx', 'html', 'css', 'scss', 'sass', 'py', 'java', 'cpp', 'c', 'cs', 'php', 'rb', 'go', 'rs', 'swift', 'kt', 'vue', 'svelte', 'json', 'xml', 'yaml', 'yml', 'sql', 'sh', 'bat', 'ps1'].includes(extension)) {
+      return <Code className="w-6 h-6 text-indigo-500" />
+    }
+
+    // PDFs
+    if (extension === 'pdf' || contentType === 'application/pdf') {
+      return <FileText className="w-6 h-6 text-red-500" />
+    }
+
+    // Documents
+    if (['doc', 'docx', 'odt', 'rtf'].includes(extension)) {
+      return <FileText className="w-6 h-6 text-blue-600" />
+    }
+
+    // Spreadsheets
+    if (['xls', 'xlsx', 'ods', 'csv'].includes(extension)) {
+      return <FileSpreadsheet className="w-6 h-6 text-green-600" />
+    }
+
+    // Presentations
+    if (['ppt', 'pptx', 'odp'].includes(extension)) {
+      return <Presentation className="w-6 h-6 text-orange-600" />
+    }
+
+    // Database files
+    if (['db', 'sqlite', 'sqlite3', 'mdb', 'accdb'].includes(extension)) {
+      return <Database className="w-6 h-6 text-purple-600" />
+    }
+
+    // Text files
+    if (['txt', 'md', 'readme', 'log', 'cfg', 'conf', 'ini'].includes(extension) ||
+      contentType.startsWith("text/")) {
+      return <FileType className="w-6 h-6 text-gray-600" />
+    }
+
+    // Executable files
+    if (['exe', 'msi', 'app', 'deb', 'rpm', 'pkg', 'run'].includes(extension)) {
+      return <Monitor className="w-6 h-6 text-gray-800" />
+    }
+
+    // Design files
+    if (['psd', 'ai', 'sketch', 'fig', 'xd', 'indd'].includes(extension)) {
+      return <Palette className="w-6 h-6 text-pink-500" />
+    }
+
+    // Ebook files
+    if (['epub', 'mobi', 'azw', 'azw3', 'fb2'].includes(extension)) {
+      return <Book className="w-6 h-6 text-amber-600" />
+    }
+
+    // Calendar files
+    if (['ics', 'ical', 'vcs'].includes(extension)) {
+      return <Calendar className="w-6 h-6 text-blue-400" />
+    }
+
+    // Configuration files
+    if (['config', 'properties', 'env', 'gitignore', 'dockerignore', 'editorconfig'].includes(extension)) {
+      return <Settings className="w-6 h-6 text-gray-500" />
+    }
+
+    // Security/Certificate files
+    if (['pem', 'crt', 'cer', 'der', 'p12', 'pfx', 'key', 'pub'].includes(extension)) {
+      return <Shield className="w-6 h-6 text-yellow-600" />
+    }
+
+    // Power/Script files
+    if (['ps1', 'psm1', 'bash', 'zsh', 'fish', 'cmd'].includes(extension)) {
+      return <Zap className="w-6 h-6 text-yellow-500" />
+    }
+
+    // Disk/Image files
+    if (['img', 'vhd', 'vmdk', 'qcow2'].includes(extension)) {
+      return <HardDrive className="w-6 h-6 text-gray-700" />
+    }
+
+    // Default file icon
     return <FileText className="w-6 h-6 text-gray-500" />
   }
+
 
   // Handle file deletion
   const handleDeleteFile = async (fileId: string, fileName: string) => {
@@ -87,10 +207,9 @@ export default function FilesList({ folderId, onUploadClick }: FilesListProps) {
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="flex items-center">
           <FileText className="w-5 h-5 mr-2 text-blue-600" />
-          Files ({files.length})
+          Files ({files.length})  
         </CardTitle>
         <div className="flex items-center space-x-2">
-          {/* View Mode Toggle */}
           <div className="flex border rounded-lg">
             <Button
               variant={viewMode === "grid" ? "default" : "ghost"}
@@ -125,17 +244,6 @@ export default function FilesList({ folderId, onUploadClick }: FilesListProps) {
           </Alert>
         )}
 
-        {files.length === 0 && !loading ? (
-          <div className="text-center py-8 text-gray-500">
-            <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-            <p className="text-lg font-medium">אין קבצים בתיקייה זו</p>
-            <p className="text-sm mb-4">העלה את הקובץ הראשון שלך כדי להתחיל</p>
-            <Button className="bg-blue-600 hover:bg-blue-700" onClick={onUploadClick}>
-              <Upload className="w-4 h-4 mr-2" />
-              העלה קבצים
-            </Button>
-          </div>
-        ) : null}
 
         {files.length === 0 ? (
           <div className="text-center py-8 text-gray-500">

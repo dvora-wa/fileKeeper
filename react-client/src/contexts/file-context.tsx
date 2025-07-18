@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, type ReactNode } from "react"
 import { fileApi, type UploadMethod } from "../lib/api"
 import type { FileItem } from "../types/api"
+import type { FileWithPreview } from "../components/upload/FileUpload"
 
 interface FileContextType {
   files: FileItem[]
@@ -12,7 +13,7 @@ interface FileContextType {
 
   // Actions
   loadFiles: (folderId: string) => Promise<void>
-  uploadFiles: (files: File[], folderId: string, method?: UploadMethod) => Promise<void>
+  uploadFiles: (files: FileWithPreview[], folderId: string, method?: UploadMethod) => Promise<void>
   deleteFile: (fileId: string) => Promise<void>
   downloadFile: (fileId: string, fileName: string) => Promise<void>
   clearError: () => void
@@ -47,7 +48,7 @@ export function FileProvider({ children }: { children: ReactNode }) {
   }
 
   // Upload multiple files with chosen method
-  const uploadFiles = async (fileList: File[], folderId: string, method: UploadMethod = "direct") => {
+  const uploadFiles = async (fileList: FileWithPreview[], folderId: string, method: UploadMethod = "direct") => {
     try {
       setError(null)
       console.log(`📤 Uploading ${fileList.length} files using ${method} method to folder:`, folderId)
@@ -66,7 +67,7 @@ export function FileProvider({ children }: { children: ReactNode }) {
             const progressInterval = setInterval(() => {
               setUploadProgress((prev) => {
                 const currentProgress = prev[fileId] || 0
-                if (currentProgress < 90) {
+                if (currentProgress <= 90) {
                   return { ...prev, [fileId]: currentProgress + 10 }
                 }
                 return prev
@@ -74,26 +75,27 @@ export function FileProvider({ children }: { children: ReactNode }) {
             }, 200)
 
             const formData = new FormData()
-            formData.append("file", file)
+            formData.append("file", file.file) // Use the actual File object
             formData.append("folderId", folderId)
             formData.append("description", "")
             formData.append("tags", "")
 
             uploadedFile = await fileApi.uploadFileDirect(formData)
             clearInterval(progressInterval)
+
           } else {
             // Presigned URL upload
             const progressInterval = setInterval(() => {
               setUploadProgress((prev) => {
                 const currentProgress = prev[fileId] || 0
-                if (currentProgress < 90) {
+                if (currentProgress <= 85) {
                   return { ...prev, [fileId]: currentProgress + 15 }
                 }
                 return prev
               })
-            }, 300)
+            }, 200)
 
-            uploadedFile = await fileApi.uploadFilePresigned(file, folderId, "", "")
+            uploadedFile = await fileApi.uploadFilePresigned(file.file, folderId, "", "")
             clearInterval(progressInterval)
           }
 
@@ -164,10 +166,15 @@ export function FileProvider({ children }: { children: ReactNode }) {
 
       const downloadData = await fileApi.getDownloadUrl(fileId)
 
-      // Create download link
       const link = document.createElement("a")
       link.href = downloadData.downloadUrl
       link.download = fileName
+      link.target = "_blank" // פתיחה בחלונית חדשה אם לא יורד
+      link.rel = "noopener noreferrer" // אבטחה
+
+      // הוספת headers לכפיית הורדה
+      link.setAttribute('download', fileName)
+
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)

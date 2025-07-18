@@ -4,25 +4,34 @@ import { useState } from "react"
 import { Button } from "../ui/Button"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card"
 import { Alert, AlertDescription } from "../ui/alert"
-import { Folder, FolderOpen, Trash2, AlertCircle, Loader2, FolderPlus } from "lucide-react"
+import { Folder, FolderOpen, Trash2, AlertCircle, Loader2, FolderPlus, Eye } from "lucide-react"
 import { useFolders } from "../../contexts/folder-context"
 import { formatDate } from "../../lib/utils"
 import type { Folder as FolderType } from "../../types/api"
 
 interface FolderTreeProps {
   onCreateFolder: () => void
+  onFolderClick?: (folderId: string, folderName: string) => void
 }
 
-export default function FolderTree({ onCreateFolder }: FolderTreeProps) {
+export default function FolderTree({ onCreateFolder, onFolderClick }: FolderTreeProps) {
   const { folders, loading, error, navigateToFolder, deleteFolder, currentFolder } = useFolders()
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const handleFolderClick = (folder: FolderType) => {
-    navigateToFolder(folder)
+    if (onFolderClick) {
+      // If onFolderClick is provided, use it (for navigation to files page)
+      onFolderClick(folder.id, folder.name)
+    } else {
+      // Otherwise use the default navigation behavior
+      navigateToFolder(folder)
+    }
   }
 
-  const handleDeleteFolder = async (folderId: string, folderName: string) => {
-    if (!confirm(`Are you sure you want to delete "${folderName}"? This action cannot be undone.`)) {
+  const handleDeleteFolder = async (e: React.MouseEvent, folderId: string, folderName: string) => {
+    e.stopPropagation() // Prevent folder click when deleting
+    
+    if (!confirm(`Are you sure you want to delete the folder "${folderName}"? This action cannot be undone.`)) {
       return
     }
 
@@ -53,7 +62,7 @@ export default function FolderTree({ onCreateFolder }: FolderTreeProps) {
         <CardTitle className="flex items-center">
           <Folder className="w-5 h-5 mr-2 text-blue-600" />
           Folders
-          {currentFolder && <span className="text-sm font-normal text-gray-500 ml-2">in "{currentFolder.name}"</span>}
+          {currentFolder && <span className="text-sm font-normal text-gray-500 mr-2">in "{currentFolder.name}"</span>}
         </CardTitle>
         <Button size="sm" onClick={onCreateFolder} className="bg-blue-600 hover:bg-blue-700">
           <FolderPlus className="w-4 h-4 mr-2" />
@@ -84,7 +93,7 @@ export default function FolderTree({ onCreateFolder }: FolderTreeProps) {
             {folders.map((folder) => (
               <div
                 key={folder.id}
-                className="group relative p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white"
+                className="group relative p-4 border rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white hover:bg-gray-50"
                 onClick={() => handleFolderClick(folder)}
               >
                 <div className="flex items-start justify-between">
@@ -102,16 +111,29 @@ export default function FolderTree({ onCreateFolder }: FolderTreeProps) {
                     </div>
                   </div>
 
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  {/* Action Buttons */}
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
+                    {onFolderClick && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onFolderClick(folder.id, folder.name)
+                        }}
+                        className="bg-white shadow-sm hover:bg-blue-50 text-blue-600"
+                        title="צפה בקבצים"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeleteFolder(folder.id, folder.name)
-                      }}
+                      onClick={(e) => handleDeleteFolder(e, folder.id, folder.name)}
                       disabled={deletingId === folder.id}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      className="bg-white shadow-sm text-red-600 hover:text-red-700 hover:bg-red-50"
+                      title="מחק תקיה"
                     >
                       {deletingId === folder.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -126,6 +148,9 @@ export default function FolderTree({ onCreateFolder }: FolderTreeProps) {
                 <div className="mt-3 flex items-center text-xs text-gray-400 space-x-4">
                   <span>{folder.subFolders?.length || 0} folders</span>
                   <span>{folder.files?.length || 0} files</span>
+                  {onFolderClick && (
+                    <span className="text-blue-600 font-medium">Click to view files</span>
+                  )}
                 </div>
               </div>
             ))}

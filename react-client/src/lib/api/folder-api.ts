@@ -3,8 +3,9 @@ import type { Folder, CreateFolderRequest } from "../../types/api"
 
 export class FolderApi extends BaseApiClient {
   async getFolders(parentFolderId?: string): Promise<Folder[]> {
-    const params = parentFolderId ? `?parentFolderId=${parentFolderId}` : ""
-    return this.request<Folder[]>(`/folders${params}`)
+    console.log("📂 Fetching folders for parent:", parentFolderId)
+    const params = parentFolderId ? `?parentFolderId=${parentFolderId}` : "";
+    return this.request<Folder[]>(`/folders${params}`);
   }
 
   async createFolder(data: CreateFolderRequest): Promise<Folder> {

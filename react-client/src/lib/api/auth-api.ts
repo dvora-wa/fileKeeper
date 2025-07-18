@@ -18,6 +18,7 @@ export class AuthApi extends BaseApiClient {
       body: JSON.stringify(data),
     })
 
+    console.log("🔑 Login successful, token set:", response.token)
     this.setToken(response.token)
     return response
   }
