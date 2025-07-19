@@ -6,10 +6,38 @@ import { useState, useRef, useCallback } from "react"
 import { Button } from "../ui/Button"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card"
 import { Alert, AlertDescription } from "../ui/alert"
-import { Upload, X, FileText, ImageIcon, Video, Music, AlertCircle, Zap, Cloud, Info, HardDrive, Settings, Calendar, Book, Palette, Monitor, FileType, Database, Presentation, FileSpreadsheet, Code, FileArchive, Shield } from "lucide-react"
+import {
+  Upload,
+  X,
+  FileText,
+  ImageIcon,
+  Video,
+  Music,
+  AlertCircle,
+  Zap,
+  Cloud,
+  HardDrive,
+  Settings,
+  Calendar,
+  Book,
+  Palette,
+  Monitor,
+  FileType,
+  Database,
+  Presentation,
+  FileSpreadsheet,
+  Code,
+  FileArchive,
+  Shield,
+  Brain,
+  Loader2,
+  Tag,
+  Eye
+} from "lucide-react"
 import { useFiles } from "../../contexts/file-context"
 import { formatFileSize } from "../../lib/utils"
 import type { UploadMethod } from "../../lib/api"
+import { analyzePdfDocument, analyzeTextDocument, analyzeWithGoogleVision } from "../../lib/googleVision"
 
 interface FileUploadProps {
   folderId: string
@@ -26,38 +54,273 @@ export interface FileWithPreview {
   lastModified: number
   lastModifiedDate: Date
   webkitRelativePath: string
+  aiAnalysis?: {
+    description: string
+    tags: string[]
+    extractedText?: string
+    confidence?: number
+  }
 }
 
 export default function FileUpload({ folderId, onUploadComplete }: FileUploadProps) {
   const [selectedFiles, setSelectedFiles] = useState<FileWithPreview[]>([])
   const [dragActive, setDragActive] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [analyzing, setAnalyzing] = useState<string | null>(null)
   const [uploadMethod, setUploadMethod] = useState<UploadMethod>("direct")
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const { uploadFiles, error, uploadProgress, clearError } = useFiles()
 
-  // Handle file selection
-  const handleFiles = useCallback(
-    (files: FileList) => {
-      console.log("Selected files:", files)
-      const fileArray = Array.from(files).map((file) => ({
-        id: `${Date.now()}-${Math.random()}`,
-        preview: file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined,
-        type: file.type,
-        name: file.name,
-        size: file.size,
-        file: file,
-        lastModified: file.lastModified,
-        lastModifiedDate: new Date(file.lastModified),
-        webkitRelativePath: file.webkitRelativePath,
-      }))
+  // AI Analysis Function
+  const analyzeFile = async (file: File): Promise<{ description: string; tags: string[] }> => {
+    try {
+      if (file.type.startsWith('image/')) {
+        return await analyzeImage(file);
+      } else if (file.type === 'application/pdf') {
+        return await analyzeDocument(file);
+      } else if (file.type.startsWith('text/')) {
+        return await analyzeTextFile(file);
+      } else {
+        return generateSmartFallbackAnalysis(file);
+      }
+    } catch (error) {
+      console.error('AI Analysis failed:', error);
+      return generateSmartFallbackAnalysis(file);
+    }
+  }
 
-      setSelectedFiles((prev) => [...prev, ...fileArray as FileWithPreview[]])
-      clearError()
-    },
-    [clearError],
-  )
+  // Enhanced image analysis
+  const analyzeImage = async (file: File): Promise<{ description: string; tags: string[] }> => {
+    try {
+      return await analyzeWithGoogleVision(file);
+    } catch (error) {
+      console.error('Real AI analysis failed, using fallback:', error);
+      return performAdvancedImageAnalysis(file, document.createElement('canvas'), null);
+    }
+  }
+
+  // Document analysis
+  const analyzeDocument = async (file: File): Promise<{ description: string; tags: string[] }> => {
+    const fileName = file.name.toLowerCase();
+    let description = "A document file";
+    const tags: string[] = ['document', 'file'];
+
+    if (file.type === 'application/pdf') {
+      tags.push('pdf');
+
+      if (fileName.includes('resume') || fileName.includes('cv')) {
+        description = "A resume or CV document";
+        tags.push('resume', 'cv', 'career', 'professional');
+      } else if (fileName.includes('report')) {
+        description = "A report document";
+        tags.push('report', 'business', 'analysis');
+      } else if (fileName.includes('manual') || fileName.includes('guide')) {
+        description = "A manual or guide document";
+        tags.push('manual', 'guide', 'instructions');
+      } else if (fileName.includes('invoice') || fileName.includes('bill')) {
+        description = "An invoice or billing document";
+        tags.push('invoice', 'billing', 'finance');
+      } else if (fileName.includes('contract') || fileName.includes('agreement')) {
+        description = "A contract or agreement document";
+        tags.push('contract', 'legal', 'agreement');
+      } else {
+        description = "A PDF document";
+      }
+    }
+
+    const res = await analyzePdfDocument(file);
+    if (res) {
+      description = res.description;
+      tags.push(...res.tags);
+    }
+
+    return { description, tags };
+  }
+
+  // Text file analysis
+  const analyzeTextFile = async (file: File): Promise<{ description: string; tags: string[] }> => {
+    try {
+      const content = await file.text();
+      const fileName = file.name.toLowerCase();
+      let description = "A text file";
+      const tags: string[] = ['text', 'file'];
+
+      if (fileName.endsWith('.md')) {
+        description = "A Markdown document";
+        tags.push('markdown', 'documentation');
+      } else if (fileName.endsWith('.json')) {
+        description = "A JSON data file";
+        tags.push('json', 'data', 'config');
+      } else if (fileName.endsWith('.csv')) {
+        description = "A CSV data file";
+        tags.push('csv', 'data', 'spreadsheet');
+      } else if (fileName.endsWith('.log')) {
+        description = "A log file";
+        tags.push('log', 'system', 'debug');
+      }
+
+      const contentLower = content.toLowerCase();
+      if (contentLower.includes('todo') || contentLower.includes('task')) {
+        tags.push('todo', 'tasks', 'planning');
+      }
+      if (contentLower.includes('meeting') || contentLower.includes('minutes')) {
+        tags.push('meeting', 'notes', 'business');
+      }
+      const res = await analyzeTextDocument(file);
+      if (res) {
+        description = res.description;
+        tags.push(...res.tags);
+      }
+      return { description, tags };
+    } catch {
+      return generateSmartFallbackAnalysis(file);
+    }
+  }
+
+  // Advanced image analysis
+  const performAdvancedImageAnalysis = (file: File, canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D | null): { description: string; tags: string[] } => {
+    const fileName = file.name.toLowerCase();
+    let description = "An image file";
+    const tags: string[] = ['image', 'visual', 'media'];
+
+    if (fileName.includes('screenshot')) {
+      description = "A screenshot image";
+      tags.push('screenshot', 'capture', 'screen');
+    } else if (fileName.includes('photo')) {
+      description = "A photograph";
+      tags.push('photograph', 'camera', 'picture');
+    } else if (fileName.includes('logo')) {
+      description = "A logo image";
+      tags.push('logo', 'branding', 'design');
+    } else if (fileName.includes('icon')) {
+      description = "An icon image";
+      tags.push('icon', 'interface', 'ui');
+    } else if (fileName.includes('chart') || fileName.includes('graph')) {
+      description = "A chart or graph image";
+      tags.push('chart', 'graph', 'data', 'visualization');
+    }
+
+    if (ctx && canvas.width && canvas.height) {
+      const aspectRatio = canvas.width / canvas.height;
+
+      if (aspectRatio > 2) {
+        tags.push('wide', 'panoramic');
+      } else if (aspectRatio < 0.5) {
+        tags.push('tall', 'portrait');
+      } else if (Math.abs(aspectRatio - 1) < 0.1) {
+        tags.push('square');
+      }
+
+      const totalPixels = canvas.width * canvas.height;
+      if (totalPixels > 2000000) {
+        tags.push('high-resolution', 'large');
+      } else if (totalPixels < 100000) {
+        tags.push('small', 'thumbnail');
+      }
+    }
+
+    if (file.type === 'image/png') {
+      tags.push('png', 'transparent');
+    } else if (file.type === 'image/jpeg') {
+      tags.push('jpeg', 'compressed');
+    } else if (file.type === 'image/gif') {
+      tags.push('gif', 'animated');
+      description = "A GIF image";
+    } else if (file.type === 'image/svg+xml') {
+      tags.push('svg', 'vector', 'scalable');
+      description = "A vector SVG image";
+    }
+
+    return { description, tags };
+  }
+
+  // Smart fallback analysis
+  const generateSmartFallbackAnalysis = (file: File): { description: string; tags: string[] } => {
+    const fileType = file.type.split('/')[0];
+    const extension = file.name.split('.').pop()?.toLowerCase() || '';
+    const fileName = file.name.toLowerCase();
+
+    let description = `A ${fileType} file`;
+    const tags: string[] = [fileType, 'file'];
+
+    if (extension) {
+      tags.push(extension);
+    }
+
+    switch (fileType) {
+      case 'video':
+        description = "A video file";
+        tags.push('media', 'video', 'movie');
+        if (fileName.includes('trailer')) tags.push('trailer');
+        if (fileName.includes('tutorial')) tags.push('tutorial', 'education');
+        break;
+      case 'audio':
+        description = "An audio file";
+        tags.push('media', 'audio', 'sound');
+        if (fileName.includes('music')) tags.push('music');
+        if (fileName.includes('podcast')) tags.push('podcast');
+        break;
+      case 'application':
+        if (['zip', 'rar', '7z'].includes(extension)) {
+          description = "An archive file";
+          tags.push('archive', 'compressed', 'zip');
+        } else if (['exe', 'dmg', 'app'].includes(extension)) {
+          description = "An executable file";
+          tags.push('executable', 'software', 'program');
+        }
+        break;
+    }
+
+    const dateRegex = /(\d{4}[-_]\d{2}[-_]\d{2})|(\d{2}[-_]\d{2}[-_]\d{4})/;
+    if (dateRegex.test(fileName)) {
+      tags.push('dated', 'organized');
+    }
+
+    if (fileName.includes('work') || fileName.includes('business')) {
+      tags.push('work', 'business', 'professional');
+    }
+
+    return { description, tags };
+  }
+
+  // Handle file selection with AI analysis
+  const handleFiles = useCallback(async (files: FileList) => {
+    console.log("Selected files:", files)
+    const fileArray = Array.from(files).map((file) => ({
+      id: `${Date.now()}-${Math.random()}`,
+      preview: file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined,
+      type: file.type,
+      name: file.name,
+      size: file.size,
+      file: file,
+      lastModified: file.lastModified,
+      lastModifiedDate: new Date(file.lastModified),
+      webkitRelativePath: file.webkitRelativePath,
+    }))
+
+    setSelectedFiles((prev) => [...prev, ...fileArray as FileWithPreview[]])
+    clearError()
+
+    // Analyze each file
+    for (const file of fileArray) {
+      setAnalyzing(file.id)
+      try {
+        const analysis = await analyzeFile(file.file)
+        console.log("AI Analysis result:", analysis)
+
+        setSelectedFiles(prev => prev.map(f =>
+          f.id === file.id
+            ? { ...f, aiAnalysis: analysis }
+            : f
+        ))
+      } catch (error) {
+        console.error('AI Analysis failed for file:', file.name, error)
+      } finally {
+        setAnalyzing(null)
+      }
+    }
+  }, [clearError])
 
   // Drag and drop handlers
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -94,7 +357,6 @@ export default function FileUpload({ folderId, onUploadComplete }: FileUploadPro
   const removeFile = (fileId: string) => {
     setSelectedFiles((prev) => {
       const updated = prev.filter((file) => file.id !== fileId)
-      // Revoke object URL to prevent memory leaks
       const fileToRemove = prev.find((file) => file.id === fileId)
       if (fileToRemove?.preview) {
         URL.revokeObjectURL(fileToRemove.preview)
@@ -103,13 +365,20 @@ export default function FileUpload({ folderId, onUploadComplete }: FileUploadPro
     })
   }
 
-  // Upload files
+  // Upload files with AI data
   const handleUpload = async () => {
     if (selectedFiles.length === 0) return
 
     try {
       setUploading(true)
-      await uploadFiles(selectedFiles, folderId, uploadMethod)
+
+      // Prepare files with AI analysis data
+      const filesWithAI = selectedFiles.map(file => ({
+        ...file,
+        aiAnalysis: file.aiAnalysis || { description: "", tags: [] }
+      }))
+
+      await uploadFiles(filesWithAI, folderId, uploadMethod)
 
       // Clear selected files
       selectedFiles.forEach((file) => {
@@ -129,7 +398,6 @@ export default function FileUpload({ folderId, onUploadComplete }: FileUploadPro
 
   // Get file icon
   const getFileIcon = (file: FileWithPreview) => {
-    console.log("File type:", file)
     const contentType = file.type || ""
     const fileName = file.name || ""
     const extension = fileName.toLowerCase().split('.').pop() || ""
@@ -243,8 +511,8 @@ export default function FileUpload({ folderId, onUploadComplete }: FileUploadPro
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Upload className="w-5 h-5 mr-2" />
-            Choose an upload method
+            <Brain className="w-5 h-5 mr-2 text-purple-600" />
+            AI-Enhanced File Upload
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -291,11 +559,9 @@ export default function FileUpload({ folderId, onUploadComplete }: FileUploadPro
           </div>
 
           <Alert className="mt-4">
-            <Info className="h-4 w-4" />
+            <Brain className="h-4 w-4" />
             <AlertDescription>
-              {uploadMethod === "direct"
-                ? "Fast Upload: Files will be uploaded through our server. Recommended for files up to 10MB."
-                : "Direct upload: Files will be uploaded directly to cloud storage. Recommended for large files."}
+              Files will be automatically analyzed by AI to generate descriptions and tags!
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -313,9 +579,12 @@ export default function FileUpload({ folderId, onUploadComplete }: FileUploadPro
         <CardContent className="flex flex-col items-center justify-center py-12 text-center">
           <Upload className={`w-12 h-12 mb-4 ${dragActive ? "text-blue-500" : "text-gray-400"}`} />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {dragActive ? "שחרר את הקבצים כאן" : "העלאת קבצים"}
+            {dragActive ? "Drop files here" : "AI-Enhanced File Upload"}
           </h3>
           <p className="text-sm text-gray-500 mb-4">Drag and drop files here, or click to select files</p>
+          <p className="text-xs text-blue-600 mb-4">
+            🤖 Files will be analyzed automatically for better organization
+          </p>
           <Button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
@@ -343,23 +612,25 @@ export default function FileUpload({ folderId, onUploadComplete }: FileUploadPro
             <div className="flex items-center justify-between mb-4">
               <h4 className="font-medium">Selected files ({selectedFiles.length})</h4>
               <Button onClick={handleUpload} disabled={uploading} className="bg-green-600 hover:bg-green-700">
-                {uploading ? "up..." : "Upload everything"}
+                {uploading ? "Uploading..." : "Upload everything"}
               </Button>
             </div>
 
             <div className="space-y-3">
               {selectedFiles.map((file) => (
-                <div key={file.id} className="flex items-center space-x-3 p-3 border rounded-lg">
+                <div key={file.id} className="flex items-start space-x-3 p-4 border rounded-lg bg-gray-50">
                   {/* File Icon/Preview */}
                   <div className="flex-shrink-0">
                     {file.preview ? (
                       <img
-                        src={file.preview || "/placeholder.svg"}
+                        src={file.preview}
                         alt={file.name}
-                        className="w-12 h-12 object-cover rounded"
+                        className="w-16 h-16 object-cover rounded"
                       />
                     ) : (
-                      getFileIcon(file)
+                      <div className="w-16 h-16 flex items-center justify-center">
+                        {getFileIcon(file)}
+                      </div>
                     )}
                   </div>
 
@@ -367,6 +638,30 @@ export default function FileUpload({ folderId, onUploadComplete }: FileUploadPro
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
                     <p className="text-sm text-gray-500">{formatFileSize(file.size)}</p>
+
+                    {/* AI Analysis Results */}
+                    {analyzing === file.id && (
+                      <div className="mt-2 flex items-center text-sm text-blue-600">
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        Analyzing with AI...
+                      </div>
+                    )}
+
+                    {file.aiAnalysis && (
+                      <div className="mt-2 p-2 bg-purple-50 rounded-lg">
+                        <div className="flex items-center mb-1">
+                          <Eye className="w-4 h-4 text-purple-600 mr-1" />
+                          <span className="text-xs font-medium text-purple-800">AI Analysis:</span>
+                        </div>
+                        <p className="text-xs text-purple-700 mb-1">{file.aiAnalysis.description}</p>
+                        <div className="flex items-center">
+                          <Tag className="w-3 h-3 text-purple-600 mr-1" />
+                          <span className="text-xs text-purple-600">
+                            {file.aiAnalysis.tags.join(', ')}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Remove Button */}
@@ -395,7 +690,7 @@ export default function FileUpload({ folderId, onUploadComplete }: FileUploadPro
               {Object.entries(uploadProgress).map(([fileId, progress]) => (
                 <div key={fileId} className="space-y-1">
                   <div className="flex justify-between text-sm">
-                    <span>up...</span>
+                    <span>Uploading...</span>
                     <span>{progress}%</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
